@@ -112,6 +112,7 @@ td.no { color: var(--bad); font-weight: 600; }
         <span class="pill"><b id="st-layouts">–</b> layouts searched in <b id="st-ms">–</b></span>
       </div>
       <div class="thumbs" id="thumbs" hidden></div>
+      <div class="row"><button class="btn primary" id="download" disabled>Download collage</button></div>
       <div id="countview" hidden>
         <canvas id="hist" height="190" aria-label="Number of layouts at each aspect ratio"></canvas>
         <p class="cap" id="histcap"></p>
@@ -226,8 +227,8 @@ function cells(node, x, y, w, h, out) {
   return out;
 }
 
-function paint(cv, tree, W, H, gutter) {
-  const dpr = window.devicePixelRatio || 1, act = active();
+function paint(cv, tree, W, H, gutter, dpr = window.devicePixelRatio || 1) {
+  const act = active();
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px';
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.fillStyle = css('--sheet'); g.fillRect(0, 0, W, H);
@@ -264,6 +265,7 @@ function render() {
   if (!L) return;
   const box = $('stage').clientWidth, maxH = Math.min(window.innerHeight * 0.6, 620), c = S.canvas;
   const W = Math.floor(Math.min(box, maxH * c)), H = Math.floor(W / c);
+  S.viewW = W; $('download').disabled = false;
   paint($('collage'), L.tree, W, H, S.gutter);
   $('st-share').textContent = pct(L.minShare);
   $('st-crop').textContent = pct(L.crop);
@@ -361,6 +363,20 @@ $('files').onchange = async (e) => {
     $('srcnote').textContent = `Using your ${S.n} photo${S.n > 1 ? 's' : ''}. They stay in this browser tab; nothing is uploaded.`;
     solve();
   } catch { $('srcnote').textContent = 'One of those files could not be read as an image. Try JPEG or PNG.'; }
+};
+$('download').onclick = () => {
+  const L = S.layouts[S.mode === 'suggest' ? S.pick : 0];
+  if (!L || !S.viewW) return;
+  // Repaint the preview's layout at 2400 px on the long side; gutter and corners scale with it.
+  const W = S.viewW, H = Math.floor(W / S.canvas), k = 2400 / Math.max(W, H);
+  const cv = document.createElement('canvas');
+  paint(cv, L.tree, W, H, S.gutter, k);
+  cv.toBlob((blob) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'collage.jpg';
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  }, 'image/jpeg', 0.92);
 };
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 80); });
 
