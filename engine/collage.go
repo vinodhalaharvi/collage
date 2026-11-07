@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"math"
 	"math/bits"
 	"sort"
@@ -191,12 +192,12 @@ func (c *Collage) Layouts(canvas float64, k int) []Layout {
 		}
 	}
 	sort.SliceStable(all, func(i, j int) bool { return all[i].Rank > all[j].Rank })
-	// Suggestions should differ in structure, not just swap photos:
-	// keep the best layout of each silhouette (tree shape, photos erased).
+	// Suggestions should differ at a glance, not by a swap deep in one column:
+	// keep the best layout for each (hero photo, first cut, photos left of it).
 	var out []Layout
 	seen := map[string]bool{}
 	for _, l := range all {
-		if s := silhouette(l.Tree); !seen[s] {
+		if s := gist(l.Tree); !seen[s] {
 			seen[s] = true
 			out = append(out, l)
 			if len(out) == k {
@@ -207,11 +208,34 @@ func (c *Collage) Layouts(canvas float64, k int) []Layout {
 	return out
 }
 
-func silhouette(n *Node) string {
-	if n.P >= 0 {
-		return "."
+// gist names what a viewer notices first: the largest photo, the direction
+// of the first cut, and how many photos sit on its left (or top) side.
+func gist(n *Node) string {
+	hero, best := -1, -1.0
+	var walk func(*Node, float64)
+	walk = func(m *Node, share float64) {
+		if m.P >= 0 {
+			if share > best {
+				hero, best = m.P, share
+			}
+			return
+		}
+		f := FracL(map[string]Cut{"H": H, "V": V}[m.C], m.L.A, m.R.A)
+		walk(m.L, share*f)
+		walk(m.R, share*(1-f))
 	}
-	return n.C + "(" + silhouette(n.L) + silhouette(n.R) + ")"
+	walk(n, 1)
+	return fmt.Sprintf("%d/%s/%d", hero, n.C, leaves(n.L))
+}
+
+func leaves(n *Node) int {
+	if n == nil {
+		return 0
+	}
+	if n.P >= 0 {
+		return 1
+	}
+	return leaves(n.L) + leaves(n.R)
 }
 
 type Bar struct {

@@ -4,14 +4,70 @@ Arrange photos into a gap-free collage of any shape, from the command line or in
 
 ```sh
 brew install vinodhalaharvi/tap/collage
-
-collage ~/Pictures/trip/*.jpg                       # square collage.jpg
-collage -ratio story -o story.jpg a.jpg b.jpg c.jpg  # 9:16
-collage -ratio 3:1 -gutter 0 -suggest 3 *.png        # three different banners
-collage serve                                        # interactive editor
 ```
 
-Every arrangement is searched, not guessed. With 9 photos there are over 500 million guillotine layouts (every split is a straight cut through the whole region). `collage` finds the one where the smallest photo is as large as possible and the crop to your canvas is as small as possible, in well under a second.
+![Seven cats in a square collage](docs/examples/seven-square.jpg)
+
+```sh
+collage cats/ginger.jpg cats/tabby.jpg cats/garden.jpg cats/curious.jpg \
+        cats/rug.jpg cats/calico.jpg cats/lion.jpg
+```
+
+Every arrangement is searched, not guessed. With 9 photos there are over 500 million guillotine layouts (every split is a straight cut through the whole region). `collage` finds the one where the smallest photo is as large as possible and the crop to your canvas is as small as possible, in under a second.
+
+## Examples
+
+All photos are from [max-mapper/cats](https://github.com/max-mapper/cats) ([credits](docs/cats/CREDITS.md)); try them yourself from the `docs` folder.
+
+### Same photos, any shape
+
+The seven cats above, re-laid for a 16:9 slide and a 9:16 story. Only `-ratio` changes; the layout is solved again from scratch.
+
+| `-ratio landscape` | `-ratio story` |
+|---|---|
+| ![Seven cats at 16:9](docs/examples/seven-landscape.jpg) | ![Seven cats at 9:16](docs/examples/seven-story.jpg) |
+
+### A banner with no gutter
+
+```sh
+collage -ratio banner -gutter 0 -size 1500 -o banner.jpg \
+        cats/amber.jpg cats/collar.jpg cats/nap.jpg cats/tux.jpg cats/sink.jpg
+```
+
+![Five cats in a 3:1 banner](docs/examples/banner.jpg)
+
+### Nine photos on a dark background
+
+```sh
+collage -ratio portrait -gutter 20 -bg "#111111" -o dark.jpg \
+        cats/floof.jpg cats/armchair.jpg cats/lawn.jpg cats/tiles.jpg cats/sink.jpg \
+        cats/nap.jpg cats/tux.jpg cats/collar.jpg cats/ginger.jpg
+```
+
+<img src="docs/examples/dark.jpg" alt="Nine cats, 4:5, dark background" width="480">
+
+518,918,400 layouts searched in under a second.
+
+### Let it suggest
+
+`-suggest 3` writes the three best layouts that look different at a glance: a different hero photo or a different main split.
+
+```sh
+collage -ratio 16:9 -suggest 3 -o pick.jpg \
+        cats/amber.jpg cats/garden.jpg cats/curious.jpg cats/rug.jpg cats/calico.jpg cats/tux.jpg
+```
+
+| `pick-1.jpg` | `pick-2.jpg` | `pick-3.jpg` |
+|---|---|---|
+| ![Suggestion 1](docs/examples/pick-1.jpg) | ![Suggestion 2](docs/examples/pick-2.jpg) | ![Suggestion 3](docs/examples/pick-3.jpg) |
+
+### In the browser
+
+```sh
+collage serve
+```
+
+Opens an editor where dragging the canvas shape re-lays the collage instantly, with Best, Suggest 3 and Count modes. The solver runs in the page as WebAssembly, so nothing is uploaded.
 
 ## Flags
 
@@ -67,4 +123,4 @@ make test
 
 ## License
 
-MIT
+Code: MIT. Example photos in `docs/cats`: BSD, see [credits](docs/cats/CREDITS.md).
