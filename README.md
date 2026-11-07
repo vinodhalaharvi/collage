@@ -2,6 +2,10 @@
 
 Arrange photos into a gap-free collage of any shape, from the command line or in your browser.
 
+**[Try it in your browser](https://vinodhalaharvi.github.io/collage/)**, no install needed. Your photos never leave the page.
+
+![Dragging the canvas shape re-lays seven cat photos instantly](docs/examples/editor.gif)
+
 ```sh
 brew install vinodhalaharvi/tap/collage
 ```
@@ -67,7 +71,7 @@ collage -ratio 16:9 -suggest 3 -o pick.jpg \
 collage serve
 ```
 
-Opens an editor where dragging the canvas shape re-lays the collage instantly, with Best, Suggest 3 and Count modes. The solver runs in the page as WebAssembly, so nothing is uploaded.
+Opens an editor where dragging the canvas shape re-lays the collage instantly, with Best, Suggest 3 and Count modes. The solver runs in the page as WebAssembly, so nothing is uploaded. The same editor is hosted at [vinodhalaharvi.github.io/collage](https://vinodhalaharvi.github.io/collage/).
 
 ## Flags
 
