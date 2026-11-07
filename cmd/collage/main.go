@@ -138,6 +138,7 @@ func makeCollage(args []string) error {
 	if err != nil {
 		return err
 	}
+	files = skipOutputs(files, *out, *suggest)
 	if len(files) == 0 {
 		return errors.New("give at least one photo, e.g. collage *.jpg")
 	}
@@ -201,6 +202,30 @@ func makeCollage(args []string) error {
 	}
 	fmt.Printf("searched %s layouts of %d photos in %s\n", commas(total), len(files), elapsed.Round(time.Millisecond))
 	return nil
+}
+
+// skipOutputs drops files this run will overwrite, so `collage *.jpg` run twice
+// does not put the previous collage inside the new one.
+func skipOutputs(files []string, out string, suggest int) []string {
+	outs := map[string]bool{}
+	add := func(p string) {
+		if a, err := filepath.Abs(p); err == nil {
+			outs[a] = true
+		}
+	}
+	add(out)
+	for i := 1; i <= max(1, suggest); i++ {
+		add(strings.TrimSuffix(out, filepath.Ext(out)) + "-" + strconv.Itoa(i) + filepath.Ext(out))
+	}
+	var keep []string
+	for _, f := range files {
+		if a, err := filepath.Abs(f); err == nil && outs[a] {
+			fmt.Fprintf(os.Stderr, "skipping %s (it is the output file)\n", f)
+			continue
+		}
+		keep = append(keep, f)
+	}
+	return keep
 }
 
 func save(name string, img image.Image) error {
