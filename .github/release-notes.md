@@ -1,3 +1,5 @@
+**New in 0.1.1:** the browser editor (`collage serve`, and the [hosted demo](https://vinodhalaharvi.github.io/collage/)) has a **Download collage** button that saves the layout on screen as a 2400px JPEG.
+
 Install with Homebrew:
 ```sh
 brew install vinodhalaharvi/tap/collage
