@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magic Collage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a light table. The collage is the print on the table; controls and the algebra sit beside it like a contact-sheet log. */
+:root {
+  --table: #E9ECEA;      /* page */
+  --sheet: #FBFCFB;      /* card + collage paper */
+  --ink: #16191C;
+  --muted: #5B636B;
+  --rule: #D3D8D6;
+  --accent: #2343CF;     /* cobalt */
+  --mark: #D8236A;       /* registration magenta: "your canvas" */
+  --good: #1E7F4F;
+  --bad: #B3261E;
+  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --table: #111417; --sheet: #1A1E22; --ink: #E7EAE8; --muted: #9AA3AB; --rule: #2C3238;
+    --accent: #8098FF; --mark: #FF5C9A; --good: #4FC38A; --bad: #FF7B72; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --table: #111417; --sheet: #1A1E22; --ink: #E7EAE8; --muted: #9AA3AB; --rule: #2C3238;
+  --accent: #8098FF; --mark: #FF5C9A; --good: #4FC38A; --bad: #FF7B72; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--table); color: var(--ink); font: 400 15px/1.5 var(--font-body); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 16px; }
+header { display: grid; gap: 4px; }
+h1 { font: 700 clamp(28px, 6vw, 40px)/1.05 var(--font-display); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; max-width: 62ch; }
+.main { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 900px) { .main { grid-template-columns: minmax(0, 1fr) 340px; } }
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.stage { display: grid; place-items: center; min-height: 240px; }
+#collage { display: block; border-radius: 6px; box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 8px 24px rgb(0 0 0 / .08); }
+.status { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--muted); }
+.pill { border: 1px solid var(--rule); border-radius: 999px; padding: 3px 10px; font-variant-numeric: tabular-nums; }
+.pill b { color: var(--ink); font-weight: 600; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--ink); font: 500 14px var(--font-body); padding: 9px 6px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--sheet); }
+.thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.thumb { border: 1px solid var(--rule); background: transparent; border-radius: 8px; padding: 8px; display: grid; gap: 6px; justify-items: center; cursor: pointer; color: var(--muted); font: 12px var(--font-body); font-variant-numeric: tabular-nums; }
+.thumb[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--ink); }
+.thumb canvas { display: block; border-radius: 3px; }
+#hist { display: block; width: 100%; }
+.cap { font-size: 13px; color: var(--muted); margin: 0; }
+.group { display: grid; gap: 8px; }
+.group > label, .lab { font: 600 12px var(--font-body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: flex; justify-content: space-between; }
+.lab output, .group > label output { font: 500 13px var(--font-mono); text-transform: none; letter-spacing: 0; color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip, .btn { border: 1px solid var(--rule); background: transparent; color: var(--ink); border-radius: 999px; padding: 5px 12px; font: 500 13px var(--font-body); cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.btn { border-radius: 8px; padding: 8px 12px; }
+.btn.primary { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+button:focus-visible, input:focus-visible, label.btn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+h2 { font: 700 20px/1.2 var(--font-display); margin: 0; }
+.hood { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .hood { grid-template-columns: 1fr 1fr; } }
+pre.eq { margin: 0; font: 12px/1.7 var(--font-mono); overflow-x: auto; color: var(--ink); }
+pre.eq .k { color: var(--accent); }
+pre.eq .c { color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+th { font-weight: 600; color: var(--muted); font-size: 12px; }
+td.ok { color: var(--good); font-weight: 600; }
+td.no { color: var(--bad); font-weight: 600; }
+.verdict { display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
+.verdict .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; transform: translateY(-1px); }
+.verdict.fail .dot { background: var(--bad); }
+.loading { color: var(--muted); font-size: 14px; text-align: center; padding: 40px 8px; }
+@media (prefers-reduced-motion: no-preference) { #collage, .thumb canvas { transition: opacity .15s ease; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Magic Collage</h1>
+    <p class="lede">Pick a canvas shape and the layout snaps to it. Every arrangement of every photo is searched by one dynamic program written in Go, running here in your browser.</p>
+  </header>
+
+  <div class="main">
+    <section class="card" aria-label="Collage">
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="m-best" aria-pressed="true">Best</button>
+        <button id="m-suggest" aria-pressed="false">Suggest 3</button>
+        <button id="m-count" aria-pressed="false">Count</button>
+      </div>
+      <div class="stage" id="stage"><canvas id="collage" aria-label="Collage preview"></canvas><div class="loading" id="loading">Loading the Go engine (3 MB)…</div></div>
+      <div class="status" aria-live="polite">
+        <span class="pill">smallest photo <b id="st-share">–</b> of the canvas</span>
+        <span class="pill">cropped <b id="st-crop">–</b></span>
+        <span class="pill"><b id="st-layouts">–</b> layouts searched in <b id="st-ms">–</b></span>
+      </div>
+      <div class="thumbs" id="thumbs" hidden></div>
+      <div id="countview" hidden>
+        <canvas id="hist" height="190" aria-label="Number of layouts at each aspect ratio"></canvas>
+        <p class="cap" id="histcap"></p>
+      </div>
+    </section>
+
+    <aside class="card" aria-label="Controls">
+      <div class="group">
+        <span class="lab">Canvas shape <output id="ratio-out">1 : 1</output></span>
+        <div class="chips" id="presets"></div>
+        <label class="sr" for="ratio">Canvas aspect ratio</label>
+        <input type="range" id="ratio" min="-1.1" max="1.1" step="0.005" value="0">
+      </div>
+      <div class="group">
+        <label for="count">Photos <output id="count-out">7</output></label>
+        <input type="range" id="count" min="2" max="9" step="1" value="7">
+        <div class="row">
+          <button class="btn" id="shuffle">New sample photos</button>
+          <label class="btn primary" for="files">Use my photos</label>
+          <input class="sr" type="file" id="files" accept="image/*" multiple>
+        </div>
+        <p class="cap" id="srcnote">Sample photos with mixed shapes: 3:2, 2:3, 16:9, 4:5 and more. Up to 9; nine takes a few seconds.</p>
+      </div>
+      <div class="group">
+        <label for="gutter">Gutter <output id="gutter-out">6 px</output></label>
+        <input type="range" id="gutter" min="0" max="20" step="1" value="6">
+      </div>
+    </aside>
+  </div>
+
+  <section class="card" aria-label="How it works">
+    <h2>Under the hood</h2>
+    <div class="hood">
+      <div class="group">
+        <span class="lab">The dynamic program</span>
+<pre class="eq"><span class="c">-- one layout step (the functor)</span>
+<span class="k">F</span> X  = Leaf photo | Split cut X X
+
+<span class="c">-- how photos shrink (projections)</span>
+<span class="k">coalg</span>  {photos} → Leaf p
+                | Split H A B
+                | Split V A B
+
+<span class="c">-- aspect monoid on a cut</span>
+H : a = a₁ + a₂
+V : 1/a = 1/a₁ + 1/a₂
+
+<span class="c">-- how answers combine (semiring)</span>
+<span class="k">alg</span>    Lift(Count × TopK₃)
+  Count  (+, ×)     layouts
+  TopK₃  (max, min) smallest photo
+
+<span class="c">-- dynamorphism = DP, memoised</span>
+<span class="k">rec</span>  = ⊕ ∘ map(alg ∘ F rec) ∘ coalg
+state = (photo subset, aspect bucket)</pre>
+        <p class="cap">Resizing the canvas never re-solves. The answer is a vector indexed by aspect ratio, so a new canvas shape is a lookup.</p>
+      </div>
+      <div class="group">
+        <span class="lab">Laws, checked live in your browser</span>
+        <div class="tablewrap"><table id="laws"><thead><tr><th>Law</th><th>Count</th><th>TopK₃</th><th>Count × TopK₃</th></tr></thead><tbody><tr><td colspan="4">Waiting for the engine…</td></tr></tbody></table></div>
+        <div class="verdict" id="dyna"><span class="dot"></span><span>Checking the DP against brute force…</span></div>
+        <p class="cap" id="lawcap"></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="wasm_exec.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (x) => Math.round(x).toLocaleString('en-US');
+const pct = (x) => (x * 100 < 10 ? (x * 100).toFixed(1) : Math.round(x * 100)) + '%';
+const ratioText = (c) => c >= 1 ? `${c.toFixed(2).replace(/\.00$/, '')} : 1` : `1 : ${(1 / c).toFixed(2).replace(/\.00$/, '')}`;
+
+const SHAPES = [[3,2],[2,3],[1,1],[16,9],[4,5],[9,16],[4,3],[3,4],[5,4]];
+const PRESETS = [['1:1',1],['4:5',4/5],['9:16',9/16],['16:9',16/9],['3:1',3]];
+const S = { n: 7, canvas: 1, mode: 'best', gutter: 6, pick: 0, layouts: [], info: null, seed: 11, samples: [], uploads: null };
+
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+function makePhoto(aspect, r) {
+  const L = 520, w = aspect >= 1 ? L : Math.round(L * aspect), h = aspect >= 1 ? Math.round(L / aspect) : L;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), hue = Math.floor(r() * 360);
+  const sky = g.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, `hsl(${hue} 55% 70%)`); sky.addColorStop(1, `hsl(${(hue + 35) % 360} 70% 88%)`);
+  g.fillStyle = sky; g.fillRect(0, 0, w, h);
+  g.fillStyle = `hsl(${(hue + 170) % 360} 85% 72%)`;
+  g.beginPath(); g.arc(w * (0.2 + 0.6 * r()), h * (0.18 + 0.22 * r()), Math.min(w, h) * (0.07 + 0.07 * r()), 0, Math.PI * 2); g.fill();
+  for (let k = 0; k < 3; k++) {
+    const base = h * (0.52 + 0.14 * k), amp = h * (0.05 + 0.05 * r()), f1 = 1 + r() * 2.5, f2 = 3 + r() * 5, ph = r() * 6;
+    g.fillStyle = `hsl(${(hue + 190 + k * 14) % 360} ${30 + k * 12}% ${48 - k * 13}%)`;
+    g.beginPath(); g.moveTo(0, h);
+    for (let x = 0; x <= w; x += 4) { const t = x / w; g.lineTo(x, base - amp * Math.sin(t * f1 * Math.PI + ph) - amp * 0.4 * Math.sin(t * f2 * Math.PI + 2 * ph)); }
+    g.lineTo(w, h); g.closePath(); g.fill();
+  }
+  return c;
+}
+
+function makeSamples() {
+  const r = mulberry(S.seed);
+  S.samples = Array.from({ length: 9 }, () => { const [a, b] = SHAPES[Math.floor(r() * SHAPES.length)]; return { img: makePhoto(a / b, r), aspect: a / b }; });
+}
+const active = () => (S.uploads || S.samples).slice(0, S.n);
+
+// ---------- layout geometry: unfold the tree into rectangles ----------
+function cells(node, x, y, w, h, out) {
+  if (node.p >= 0) { out.push({ p: node.p, x, y, w, h }); return out; }
+  if (node.c === 'H') { const wl = w * node.l.a / (node.l.a + node.r.a); cells(node.l, x, y, wl, h, out); cells(node.r, x + wl, y, w - wl, h, out); }
+  else { const il = 1 / node.l.a, ir = 1 / node.r.a, hl = h * il / (il + ir); cells(node.l, x, y, w, hl, out); cells(node.r, x, y + hl, w, h - hl, out); }
+  return out;
+}
+
+function paint(cv, tree, W, H, gutter) {
+  const dpr = window.devicePixelRatio || 1, act = active();
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = css('--sheet'); g.fillRect(0, 0, W, H);
+  const gp = gutter / 2, rad = gutter > 0 ? Math.min(4, gutter) : 0;
+  for (const c of cells(tree, gp, gp, W - gutter, H - gutter, [])) {
+    const x = c.x + gp, y = c.y + gp, w = Math.max(1, c.w - gutter), h = Math.max(1, c.h - gutter);
+    const img = act[c.p].img, s = Math.max(w / img.width, h / img.height), sw = w / s, sh = h / s;
+    g.save(); g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, rad) : g.rect(x, y, w, h); g.clip();
+    g.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
+    g.restore();
+  }
+}
+
+// ---------- engine calls ----------
+function solve() {
+  $('st-ms').textContent = 'solving…';
+  setTimeout(() => {
+    S.info = JSON.parse(dpSolve(active().map(p => p.aspect)));
+    $('st-layouts').textContent = fmt(S.info.layouts);
+    $('st-ms').textContent = S.info.ms < 10 ? S.info.ms.toFixed(1) + ' ms' : fmt(S.info.ms) + ' ms';
+    refresh();
+  }, 16);
+}
+
+function refresh() {
+  if (!S.info) return;
+  S.layouts = JSON.parse(dpLayouts(S.canvas, 3)) || [];
+  if (S.pick >= S.layouts.length) S.pick = 0;
+  render();
+}
+
+function render() {
+  const L = S.layouts[S.mode === 'suggest' ? S.pick : 0];
+  if (!L) return;
+  const box = $('stage').clientWidth, maxH = Math.min(window.innerHeight * 0.6, 620), c = S.canvas;
+  const W = Math.floor(Math.min(box, maxH * c)), H = Math.floor(W / c);
+  paint($('collage'), L.tree, W, H, S.gutter);
+  $('st-share').textContent = pct(L.minShare);
+  $('st-crop').textContent = pct(L.crop);
+  $('thumbs').hidden = S.mode !== 'suggest';
+  $('countview').hidden = S.mode !== 'count';
+  if (S.mode === 'suggest') renderThumbs();
+  if (S.mode === 'count') renderHist();
+}
+
+function renderThumbs() {
+  const box = $('thumbs'); box.innerHTML = '';
+  S.layouts.forEach((L, i) => {
+    const b = document.createElement('button'); b.className = 'thumb'; b.setAttribute('aria-pressed', i === S.pick);
+    b.setAttribute('aria-label', `Suggestion ${i + 1}`);
+    const cv = document.createElement('canvas'); const h = 78, w = Math.min(h * S.canvas, (box.clientWidth / 3) - 20);
+    paint(cv, L.tree, Math.floor(w), Math.floor(w / S.canvas), Math.max(1, S.gutter / 3));
+    const t = document.createElement('span'); t.textContent = `${pct(L.minShare)} min · ${pct(L.crop)} crop`;
+    b.append(cv, t); b.onclick = () => { S.pick = i; render(); };
+    box.append(b);
+  });
+}
+
+function renderHist() {
+  const { bars, total } = JSON.parse(dpHistogram());
+  const cv = $('hist'), dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = 190;
+  cv.width = W * dpr; cv.height = H * dpr; const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, W, H);
+  if (!bars || !bars.length) return;
+  const pad = { l: 40, r: 10, t: 12, b: 26 }, pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  const lc = Math.log(S.canvas);
+  let x0 = Math.min(Math.log(bars[0].aspect), lc) - 0.15, x1 = Math.max(Math.log(bars[bars.length - 1].aspect), lc) + 0.15;
+  const ymax = Math.ceil(Math.log10(Math.max(...bars.map(b => b.count))));
+  const X = (la) => pad.l + (la - x0) / (x1 - x0) * pw, Y = (n) => pad.t + ph - (Math.log10(n) + 0.3) / (ymax + 0.3) * ph;
+  g.font = `11px ${css('--font-mono')}`; g.fillStyle = css('--muted'); g.strokeStyle = css('--rule'); g.lineWidth = 1;
+  for (let k = 0; k <= ymax; k += Math.max(1, Math.ceil(ymax / 4))) {
+    const y = Math.round(Y(10 ** k)) + .5; g.beginPath(); g.moveTo(pad.l, y); g.lineTo(W - pad.r, y); g.stroke();
+    g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(k < 3 ? String(10 ** k) : k < 6 ? `${10 ** (k - 3)}k` : k < 9 ? `${10 ** (k - 6)}M` : `${10 ** (k - 9)}B`, pad.l - 6, y);
+  }
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  for (const [lab, a] of [['1:4', .25], ['1:2', .5], ['1:1', 1], ['2:1', 2], ['4:1', 4], ['8:1', 8], ['1:8', .125]]) {
+    const la = Math.log(a); if (la < x0 || la > x1) continue; g.fillText(lab, X(la), H - pad.b + 8);
+  }
+  const step = Math.log(144) / 63, bw = Math.max(2, step / (x1 - x0) * pw * 0.78);
+  let near = bars[0];
+  for (const b of bars) if (Math.abs(Math.log(b.aspect) - lc) < Math.abs(Math.log(near.aspect) - lc)) near = b;
+  for (const b of bars) {
+    const x = X(Math.log(b.aspect)), y = Y(b.count), base = pad.t + ph;
+    g.fillStyle = b === near ? css('--mark') : css('--accent'); g.globalAlpha = b === near ? 1 : 0.75;
+    g.fillRect(x - bw / 2, y, bw, base - y);
+  }
+  g.globalAlpha = 1; g.strokeStyle = css('--mark'); g.setLineDash([3, 3]);
+  const mx = Math.round(X(lc)) + .5; g.beginPath(); g.moveTo(mx, pad.t); g.lineTo(mx, pad.t + ph); g.stroke(); g.setLineDash([]);
+  g.fillStyle = css('--mark'); g.textAlign = mx > W - 90 ? 'right' : 'left'; g.textBaseline = 'top';
+  g.fillText('your canvas', mx + (mx > W - 90 ? -5 : 5), pad.t);
+  $('histcap').textContent = `${fmt(total)} layouts in total. ${fmt(near.count)} of them land at about ${ratioText(near.aspect)}, the bucket nearest your canvas. Bars use a log scale.`;
+}
+
+function renderLaws() {
+  const res = JSON.parse(dpLaws());
+  const algs = [...new Set(res.laws.map(l => l.algebra))], names = [...new Set(res.laws.map(l => l.law))];
+  const tb = $('laws').querySelector('tbody'); tb.innerHTML = '';
+  for (const n of names) {
+    const tr = document.createElement('tr'); const th = document.createElement('td'); th.textContent = n; tr.append(th);
+    for (const a of algs) { const r = res.laws.find(l => l.law === n && l.algebra === a); const td = document.createElement('td'); td.className = r.ok ? 'ok' : 'no'; td.textContent = r.ok ? '✓' : '✗'; td.title = r.ok ? 'holds' : 'fails'; tr.append(td); }
+    tb.append(tr);
+  }
+  const d = res.dyna;
+  $('dyna').className = 'verdict' + (d.ok ? '' : ' fail');
+  $('dyna').lastElementChild.textContent = d.ok
+    ? `DP equals brute force on ${d.photos} random photos: ${fmt(d.trees)} whole layouts folded one by one, against ${d.alternatives} memoised steps over ${d.states} subproblems.`
+    : `DP and brute force disagree on ${d.photos} photos.`;
+  $('lawcap').textContent = `${fmt(res.laws[0].trials)} random trials per law, run in ${res.ms.toFixed(0)} ms. Distributivity is what lets the DP keep only the best sub-layouts.`;
+}
+
+// ---------- controls ----------
+function setMode(m) { S.mode = m; for (const k of ['best', 'suggest', 'count']) $('m-' + k).setAttribute('aria-pressed', k === m); render(); }
+function setCanvas(c) {
+  S.canvas = c; $('ratio').value = Math.log(c); $('ratio-out').textContent = ratioText(c);
+  for (const b of $('presets').children) b.setAttribute('aria-pressed', Math.abs(Math.log(+b.dataset.a) - Math.log(c)) < 0.01);
+  refresh();
+}
+for (const [lab, a] of PRESETS) { const b = document.createElement('button'); b.className = 'chip'; b.textContent = lab; b.dataset.a = a; b.onclick = () => setCanvas(a); $('presets').append(b); }
+$('m-best').onclick = () => setMode('best'); $('m-suggest').onclick = () => setMode('suggest'); $('m-count').onclick = () => setMode('count');
+$('ratio').oninput = (e) => setCanvas(Math.exp(+e.target.value));
+$('count').oninput = (e) => { $('count-out').textContent = e.target.value; };
+$('count').onchange = (e) => { S.n = +e.target.value; solve(); };
+$('gutter').oninput = (e) => { S.gutter = +e.target.value; $('gutter-out').textContent = S.gutter + ' px'; render(); };
+$('shuffle').onclick = () => { S.uploads = null; S.seed++; makeSamples(); $('count').max = 9; $('srcnote').textContent = 'Sample photos with mixed shapes: 3:2, 2:3, 16:9, 4:5 and more. Up to 9; nine takes a few seconds.'; solve(); };
+$('files').onchange = async (e) => {
+  const files = [...e.target.files].slice(0, 9); if (!files.length) return;
+  try {
+    const imgs = await Promise.all(files.map(f => createImageBitmap(f)));
+    S.uploads = imgs.map(img => ({ img, aspect: Math.min(6, Math.max(1 / 6, img.width / img.height)) }));
+    S.n = S.uploads.length; $('count').max = Math.max(2, S.n); $('count').value = S.n; $('count-out').textContent = S.n;
+    $('srcnote').textContent = `Using your ${S.n} photo${S.n > 1 ? 's' : ''}. They stay in this browser tab; nothing is uploaded.`;
+    solve();
+  } catch { $('srcnote').textContent = 'One of those files could not be read as an image. Try JPEG or PNG.'; }
+};
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 80); });
+
+// ---------- boot ----------
+window.dpReady = () => {
+  $('loading').remove();
+  makeSamples(); setCanvas(1); solve();
+  setTimeout(renderLaws, 50);
+};
+(async () => {
+  try {
+    const go = new Go();
+    const res = await WebAssembly.instantiateStreaming(fetch('engine.wasm'), go.importObject)
+      .catch(async () => WebAssembly.instantiate(await (await fetch('engine.wasm')).arrayBuffer(), go.importObject));
+    go.run(res.instance);
+  } catch (err) {
+    $('loading').textContent = 'The Go engine could not start in this browser: ' + err.message;
+  }
+})();
+</script>
+</body>
+</html>
