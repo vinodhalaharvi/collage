@@ -1,10 +1,9 @@
-// Package engine is a dynamic-programming collage solver written as
-// recursion schemes over a layout functor.
+// Package engine is the collage solver: a dynamic program over guillotine
+// layouts, written with github.com/vinodhalaharvi/dyna.
 //
-//	F X  =  Leaf Photo  |  Split Cut X X          (the shape of one layout step)
-//	coalgebra  S → List(F S)                      (how a problem shrinks: the projections)
-//	algebra    F T → T, bilinear over (T, ⊕)      (how answers combine: the semiring)
-//	dyna       ⊕ ∘ map(alg ∘ F rec) ∘ coalg, memoised   (dynamic programming)
+//	F X       = Leaf photo | Split cut X X        one layout step
+//	coalgebra   {photos} → every way to split them in two
+//	algebra     Lift(Count × TopK) graded by aspect ratio
 package engine
 
 // Cut labels a binary split: H puts children side by side, V stacks them.
@@ -20,22 +19,6 @@ func (c Cut) String() string {
 		return "H"
 	}
 	return "V"
-}
-
-// F is the layout functor F X = Leaf Photo | Split Cut X X.
-type F[X any] struct {
-	IsLeaf bool
-	Photo  int
-	Cut    Cut
-	L, R   X
-}
-
-// Fmap is F's action on arrows: apply f to every child, keep the shape.
-func Fmap[X, Y any](f func(X) Y, n F[X]) F[Y] {
-	if n.IsLeaf {
-		return F[Y]{IsLeaf: true, Photo: n.Photo}
-	}
-	return F[Y]{Cut: n.Cut, L: f(n.L), R: f(n.R)}
 }
 
 // Aspect is the aspect monoid on layouts: side by side at equal height the

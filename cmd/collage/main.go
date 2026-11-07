@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -57,6 +58,8 @@ Examples:
 `
 
 func main() {
+	// The solver makes many short-lived allocations; collecting less often is ~20% faster.
+	debug.SetGCPercent(400)
 	args := os.Args[1:]
 	var err error
 	switch {

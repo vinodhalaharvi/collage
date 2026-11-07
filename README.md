@@ -88,7 +88,7 @@ Up to 10 photos. JPEG, PNG and GIF work everywhere. On macOS, HEIC (the iPhone d
 
 ## How it works
 
-The solver is one dynamic program, written as recursion schemes:
+The solver is one dynamic program built on [dyna](https://github.com/vinodhalaharvi/dyna), a small Go library for dynamic programs written as recursion schemes:
 
 ```
 F X   = Leaf photo | Split cut X X                 one layout step (a functor)
@@ -110,7 +110,7 @@ The DP is only correct if the algebra obeys the semiring laws, distributivity ab
 ```
 $ collage laws
   Count × TopK₃
-    distributes on left    holds
+    distributes over ⊕     holds
     ...
     6 photos   30,240 layouts   608 steps over 63 subproblems  equal
 ```
